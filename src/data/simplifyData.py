@@ -1,5 +1,4 @@
-# use convertcsv.com to convert from csv to json first
-
+import pandas as pd
 import json
 import os
 
@@ -9,22 +8,53 @@ def divide_subclasses(courses):
         "code": courses[0]["COURSE CODE"],
         "title": courses[0]["COURSE TITLE"],
         "term": courses[0]["TERM"][-1],
-        "subclass": [{
-            "section": courses[0]["CLASS SECTION"],
-            "stime": [courses[0]["START TIME"]] if not courses[0]["START TIME"].isspace() else ["N/A"],
-            "etime": [courses[0]["END TIME"]],
-            "venue": [courses[0]["VENUE"]] if (not courses[0]["VENUE"].isspace()) and (len(courses[0]["VENUE"]) > 0) else ["N/A"],
-        }]
+        "subclass": [
+            {
+                "section": courses[0]["CLASS SECTION"],
+                "stime": [courses[0]["START TIME"]]
+                if not courses[0]["START TIME"].isspace()
+                else ["N/A"],
+                "etime": [courses[0]["END TIME"]],
+                "venue": [courses[0]["VENUE"]]
+                if (not courses[0]["VENUE"].isspace())
+                and (len(courses[0]["VENUE"]) > 0)
+                else ["N/A"],
+            }
+        ],
     }
-    day = list(filter(None, [courses[0]["SUN"], courses[0]["MON"], courses[0]["TUE"],
-                             courses[0]["WED"], courses[0]["THU"], courses[0]["FRI"], courses[0]["SAT"]]))
+    day = list(
+        filter(
+            None,
+            [
+                courses[0]["SUN"],
+                courses[0]["MON"],
+                courses[0]["TUE"],
+                courses[0]["WED"],
+                courses[0]["THU"],
+                courses[0]["FRI"],
+                courses[0]["SAT"],
+            ],
+        )
+    )
     if len(day) > 0:
         divided["subclass"][0]["day"] = [day[0]]
     else:
         divided["subclass"][0]["day"] = ["N/A"]
     for course in courses[1:]:
-        day = list(filter(None, [course["SUN"], course["MON"], course["TUE"],
-                                 course["WED"], course["THU"], course["FRI"], course["SAT"]]))
+        day = list(
+            filter(
+                None,
+                [
+                    course["SUN"],
+                    course["MON"],
+                    course["TUE"],
+                    course["WED"],
+                    course["THU"],
+                    course["FRI"],
+                    course["SAT"],
+                ],
+            )
+        )
         exists = False
         for sub in divided["subclass"]:
             if course["CLASS SECTION"] == sub["section"]:
@@ -40,7 +70,7 @@ def divide_subclasses(courses):
                 "section": course["CLASS SECTION"],
                 "stime": [course["START TIME"]],
                 "etime": [course["END TIME"]],
-                "venue": [course["VENUE"]]
+                "venue": [course["VENUE"]],
             }
             if len(day) > 0:
                 newsub["day"] = [day[0]]
@@ -50,26 +80,29 @@ def divide_subclasses(courses):
     return divided
 
 
-here = os.path.dirname(os.path.abspath(__file__))
-filename = os.path.join(here, '2022-23_class_timetable_20220721.json')
-result_filename = os.path.join(here, 'simplified.json')
+def main(xlsx_filename: str):
+    here = os.path.dirname(os.path.abspath(__file__))
+    xlsx_filename = os.path.join(here, xlsx_filename)
+    result_filename = os.path.join(here, "simplified.json")
 
-with open(filename, 'rt', encoding='UTF8') as json_data:
-    courses = json.load(json_data)
+    courses = pd.read_excel(xlsx_filename, keep_default_na=False).to_dict("records")
 
-prevCourse = courses[0]
-sameCourse = [courses[0]]
-newJSON = []
+    prevCourse = courses[0]
+    sameCourse = [courses[0]]
+    newJSON = []
 
-for course in courses:
-    if prevCourse["COURSE CODE"] == course["COURSE CODE"]:
-        sameCourse.append(course)
-    else:
-        newJSON.append(divide_subclasses(sameCourse))
-        sameCourse.clear()
-        sameCourse.append(course)
-        prevCourse = course
+    for course in courses:
+        if prevCourse["COURSE CODE"] == course["COURSE CODE"]:
+            sameCourse.append(course)
+        else:
+            newJSON.append(divide_subclasses(sameCourse))
+            sameCourse.clear()
+            sameCourse.append(course)
+            prevCourse = course
+
+    with open(result_filename, "w") as outfile:
+        json.dump(newJSON, outfile)
 
 
-with open(result_filename, "w") as outfile:
-    json.dump(newJSON, outfile)
+if __name__ == "__main__":
+    main("2023-24_class_timetable_20230721.xlsx")
