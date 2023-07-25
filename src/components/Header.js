@@ -18,7 +18,7 @@ function Header() {
     <div className="header-wrapper">
       <ThemeProvider theme={theme}>
         <Typography variant="h2">
-          HKU Timetable Combination Finder (22-23)
+          HKU Timetable Combination Finder (23-24)
         </Typography>
       </ThemeProvider>
     </div>
